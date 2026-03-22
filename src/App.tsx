@@ -11,7 +11,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sparkles, LogIn } from 'lucide-react';
 
 const AuthScreen: React.FC = () => {
-  const { login } = useAppContext();
+  const { login, loginError } = useAppContext();
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 theme-peach">
@@ -28,9 +28,15 @@ const AuthScreen: React.FC = () => {
           <p className="opacity-70">Your personal AI diet assistant. Track everything, improve every day.</p>
         </div>
         
+        {loginError && (
+          <div className="w-full p-4 bg-red-500/10 text-red-500 text-sm rounded-xl text-left">
+            {loginError}
+          </div>
+        )}
+        
         <button
           onClick={login}
-          className="w-full py-4 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg mt-4"
+          className="w-full py-4 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg mt-2"
         >
           <LogIn className="w-5 h-5" />
           Continue with Google

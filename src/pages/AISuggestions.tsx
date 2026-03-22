@@ -8,7 +8,8 @@ let aiClient: GoogleGenAI | null = null;
 
 const getAI = () => {
   if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
+    // @ts-ignore
+    const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     if (!key) {
       throw new Error('GEMINI_API_KEY environment variable is missing. Please add it to your environment variables.');
     }
@@ -30,8 +31,15 @@ export const AISuggestions: React.FC = () => {
     setErrorMsg(null);
     try {
       const ai = getAI();
+      const languages: Record<string, string> = {
+        en: 'English',
+        ne: 'Nepali',
+        ja: 'Japanese'
+      };
+      const langName = languages[profile?.language || 'en'] || 'English';
+      
       const prompt = `Act as a friendly, motivating AI diet assistant for an app called DIETARYO.
-      The user's language preference is ${profile?.language || 'en'}.
+      You MUST respond entirely in ${langName}.
       Provide a short, actionable, and encouraging tip about ${topic}.
       Keep it under 3 sentences. Use emojis.`;
 

@@ -21,6 +21,7 @@ interface AppContextType {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   isAuthReady: boolean;
+  loginError: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -32,6 +33,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -79,8 +81,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, isAuthReady]);
 
   const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    setLoginError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        setLoginError('This domain is not authorized for OAuth. Please add your Vercel/GitHub URL to Firebase Console -> Authentication -> Settings -> Authorized domains.');
+      } else {
+        setLoginError(error.message || 'Failed to log in. Please try again.');
+      }
+    }
   };
 
   const logout = async () => {
@@ -93,7 +105,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ user, profile, isAuthReady, login, logout, updateProfile }}>
+    <AppContext.Provider value={{ user, profile, isAuthReady, loginError, login, logout, updateProfile }}>
       {children}
     </AppContext.Provider>
   );
