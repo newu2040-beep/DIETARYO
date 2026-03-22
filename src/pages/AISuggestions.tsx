@@ -4,7 +4,18 @@ import { Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useAppContext } from '../context/AppContext';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiClient: GoogleGenAI | null = null;
+
+const getAI = () => {
+  if (!aiClient) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new Error('GEMINI_API_KEY environment variable is missing. Please add it to your environment variables.');
+    }
+    aiClient = new GoogleGenAI({ apiKey: key });
+  }
+  return aiClient;
+};
 
 export const AISuggestions: React.FC = () => {
   const { profile } = useAppContext();
@@ -12,10 +23,13 @@ export const AISuggestions: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [topic, setTopic] = useState<'diet' | 'fasting' | 'hydration'>('diet');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const generateSuggestion = async () => {
     setIsLoading(true);
+    setErrorMsg(null);
     try {
+      const ai = getAI();
       const prompt = `Act as a friendly, motivating AI diet assistant for an app called DIETARYO.
       The user's language preference is ${profile?.language || 'en'}.
       Provide a short, actionable, and encouraging tip about ${topic}.
@@ -27,9 +41,13 @@ export const AISuggestions: React.FC = () => {
       });
 
       setSuggestion(response.text || 'Stay hydrated and keep up the great work! 💧');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating suggestion:', error);
-      setSuggestion('Oops! I need a quick break. Try asking me again in a moment. 🌿');
+      if (error.message?.includes('GEMINI_API_KEY')) {
+        setErrorMsg('API Key is missing. Please add GEMINI_API_KEY to your Vercel/GitHub environment variables.');
+      } else {
+        setSuggestion('Oops! I need a quick break. Try asking me again in a moment. 🌿');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +107,17 @@ export const AISuggestions: React.FC = () => {
               className="text-purple-500"
             >
               <RefreshCw className="w-8 h-8 opacity-50" />
+            </motion.div>
+          ) : errorMsg ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center flex flex-col items-center gap-3"
+            >
+              <div className="p-3 bg-red-500/10 text-red-500 rounded-2xl">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <p className="text-red-500 font-medium">{errorMsg}</p>
             </motion.div>
           ) : suggestion ? (
             <motion.p 
