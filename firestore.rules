@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    function isValidStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser() {
+      return hasOnlyAllowedFields(['uid', 'email', 'theme', 'language', 'waterGoal', 'weightGoal', 'createdAt']) &&
+             request.resource.data.uid == request.auth.uid &&
+             request.resource.data.email is string &&
+             request.resource.data.theme in ['peach', 'mint', 'lavender', 'blue', 'sand', 'dark', 'light'] &&
+             request.resource.data.language in ['en', 'ne', 'ja'] &&
+             (!( 'waterGoal' in request.resource.data ) || request.resource.data.waterGoal is number) &&
+             (!( 'weightGoal' in request.resource.data ) || request.resource.data.weightGoal is number) &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    function isValidDailyRecord() {
+      return hasOnlyAllowedFields(['uid', 'date', 'waterIntake', 'weight', 'fastingStart', 'fastingEnd', 'fastingTargetHours', 'updatedAt']) &&
+             request.resource.data.uid == request.auth.uid &&
+             isValidStringLength('date', 10, 10) &&
+             request.resource.data.waterIntake is number &&
+             (!( 'weight' in request.resource.data ) || request.resource.data.weight is number) &&
+             (!( 'fastingStart' in request.resource.data ) || request.resource.data.fastingStart is timestamp || request.resource.data.fastingStart == null) &&
+             (!( 'fastingEnd' in request.resource.data ) || request.resource.data.fastingEnd is timestamp || request.resource.data.fastingEnd == null) &&
+             (!( 'fastingTargetHours' in request.resource.data ) || request.resource.data.fastingTargetHours is number) &&
+             request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidMeal() {
+      return hasOnlyAllowedFields(['uid', 'date', 'timestamp', 'type', 'description', 'calories', 'notes', 'isJunk']) &&
+             request.resource.data.uid == request.auth.uid &&
+             isValidStringLength('date', 10, 10) &&
+             request.resource.data.timestamp is timestamp &&
+             request.resource.data.type in ['Breakfast', 'Lunch', 'Dinner', 'Snack'] &&
+             isValidStringLength('description', 1, 500) &&
+             (!( 'calories' in request.resource.data ) || request.resource.data.calories is number) &&
+             isValidOptionalString('notes', 0, 1000) &&
+             (!( 'isJunk' in request.resource.data ) || request.resource.data.isJunk is bool);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser() && uidUnchanged();
+      allow update: if isOwner(userId) && isValidUser() && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(userId);
+
+      match /daily_records/{dateString} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidDailyRecord() && uidUnchanged();
+        allow update: if isOwner(userId) && isValidDailyRecord() && uidNotModified();
+        allow delete: if isOwner(userId);
+      }
+
+      match /meals/{mealId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidMeal() && uidUnchanged();
+        allow update: if isOwner(userId) && isValidMeal() && uidNotModified() && request.resource.data.timestamp == resource.data.timestamp;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

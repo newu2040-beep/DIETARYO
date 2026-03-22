@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --color-peach-100: #ffecd2;
+  --color-peach-500: #fcb69f;
+  --color-mint-100: #d4fc79;
+  --color-mint-500: #96e6a1;
+  --color-lavender-100: #e0c3fc;
+  --color-lavender-500: #8ec5fc;
+  --color-blue-100: #e0c3fc;
+  --color-blue-500: #8ec5fc;
+  --color-sand-100: #fdfbfb;
+  --color-sand-500: #ebedee;
+}
+
+@layer base {
+  :root {
+    --bg-gradient-from: #fdfbfb;
+    --bg-gradient-to: #ebedee;
+    --text-primary: #1f2937;
+    --text-secondary: #4b5563;
+    --card-bg: rgba(255, 255, 255, 0.7);
+    --card-border: rgba(255, 255, 255, 0.5);
+    --primary-btn: #1f2937;
+    --primary-btn-text: #ffffff;
+  }
+
+  .theme-peach {
+    --bg-gradient-from: #ffecd2;
+    --bg-gradient-to: #fcb69f;
+  }
+
+  .theme-mint {
+    --bg-gradient-from: #d4fc79;
+    --bg-gradient-to: #96e6a1;
+  }
+
+  .theme-lavender {
+    --bg-gradient-from: #e0c3fc;
+    --bg-gradient-to: #8ec5fc;
+  }
+
+  .theme-blue {
+    --bg-gradient-from: #a1c4fd;
+    --bg-gradient-to: #c2e9fb;
+  }
+
+  .theme-sand {
+    --bg-gradient-from: #fdfbfb;
+    --bg-gradient-to: #ebedee;
+  }
+
+  .theme-dark {
+    --bg-gradient-from: #1f2937;
+    --bg-gradient-to: #111827;
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --card-bg: rgba(31, 41, 55, 0.7);
+    --card-border: rgba(55, 65, 81, 0.5);
+    --primary-btn: #f9fafb;
+    --primary-btn-text: #111827;
+  }
+
+  .theme-light {
+    --bg-gradient-from: #ffffff;
+    --bg-gradient-to: #f3f4f6;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--bg-gradient-from), var(--bg-gradient-to));
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}

@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "theme": { "type": "string", "enum": ["peach", "mint", "lavender", "blue", "sand", "dark", "light"] },
+        "language": { "type": "string", "enum": ["en", "ne", "ja"] },
+        "waterGoal": { "type": "number" },
+        "weightGoal": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "theme", "language", "createdAt"]
+    },
+    "DailyRecord": {
+      "title": "DailyRecord",
+      "description": "Daily tracking for water, weight, and fasting",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "waterIntake": { "type": "number" },
+        "weight": { "type": "number" },
+        "fastingStart": { "type": "string", "format": "date-time", "description": "Can be null if not fasting" },
+        "fastingEnd": { "type": "string", "format": "date-time", "description": "Can be null if not fasting" },
+        "fastingTargetHours": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "date", "waterIntake", "updatedAt"]
+    },
+    "Meal": {
+      "title": "Meal",
+      "description": "A logged meal or snack",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["Breakfast", "Lunch", "Dinner", "Snack"] },
+        "description": { "type": "string" },
+        "calories": { "type": "number" },
+        "notes": { "type": "string" },
+        "isJunk": { "type": "boolean" }
+      },
+      "required": ["uid", "date", "timestamp", "type", "description"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/users/{userId}/daily_records/{dateString}": {
+      "schema": { "$ref": "#/entities/DailyRecord" },
+      "description": "Daily tracking data for a specific user"
+    },
+    "/users/{userId}/meals/{mealId}": {
+      "schema": { "$ref": "#/entities/Meal" },
+      "description": "Meals logged by a specific user"
+    }
+  }
+}
