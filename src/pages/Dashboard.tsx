@@ -5,9 +5,11 @@ import { useAppContext } from '../context/AppContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { format } from 'date-fns';
+import { useTranslation } from '../utils/translations';
 
 export const Dashboard: React.FC = () => {
   const { user, profile } = useAppContext();
+  const t = useTranslation(profile?.language);
   const [todayRecord, setTodayRecord] = useState<any>(null);
   const [meals, setMeals] = useState<any[]>([]);
   
@@ -52,9 +54,9 @@ export const Dashboard: React.FC = () => {
       {/* Greeting */}
       <div className="mt-4">
         <h2 className="text-3xl font-light tracking-tight">
-          Hello, <span className="font-medium">{user?.displayName?.split(' ')[0] || 'Friend'}</span>
+          {t('dashboardGreeting')}, <span className="font-medium">{user?.displayName?.split(' ')[0] || t('guest')}</span>
         </h2>
-        <p className="text-sm opacity-70 mt-1">Ready to crush your goals today?</p>
+        <p className="text-sm opacity-70 mt-1">{t('dashboardSubtitle')}</p>
       </div>
 
       {/* Quick Stats Grid */}
@@ -69,7 +71,7 @@ export const Dashboard: React.FC = () => {
             <div className="p-2 bg-blue-500/10 rounded-full text-blue-500">
               <Droplets className="w-5 h-5" />
             </div>
-            <span className="text-xs font-medium opacity-60">Water</span>
+            <span className="text-xs font-medium opacity-60">{t('water')}</span>
           </div>
           <div>
             <div className="text-2xl font-semibold">{todayRecord?.waterIntake || 0}</div>
@@ -94,14 +96,14 @@ export const Dashboard: React.FC = () => {
             <div className="p-2 bg-orange-500/10 rounded-full text-orange-500">
               <Flame className="w-5 h-5" />
             </div>
-            <span className="text-xs font-medium opacity-60">Fasting</span>
+            <span className="text-xs font-medium opacity-60">{t('fasting')}</span>
           </div>
           <div>
             <div className="text-2xl font-semibold">
-              {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? 'Active' : 'Off'}
+              {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? t('active') : t('off')}
             </div>
             <div className="text-xs opacity-60">
-              {todayRecord?.fastingStart ? 'Tracking now' : 'Start your fast'}
+              {todayRecord?.fastingStart ? t('trackingNow') : t('startYourFast')}
             </div>
           </div>
         </motion.div>
@@ -117,7 +119,7 @@ export const Dashboard: React.FC = () => {
               <div className="p-2 bg-emerald-500/10 rounded-full text-emerald-500">
                 <Utensils className="w-5 h-5" />
               </div>
-              <span className="font-medium">Today's Diet</span>
+              <span className="font-medium">{t('todaysDiet')}</span>
             </div>
             <span className="text-sm font-semibold">{totalCalories} kcal</span>
           </div>
@@ -146,10 +148,10 @@ export const Dashboard: React.FC = () => {
         </div>
         <h3 className="font-medium mb-2 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-purple-500" />
-          AI Insight
+          {t('aiInsight')}
         </h3>
         <p className="text-sm opacity-80 leading-relaxed">
-          You're doing great! Remember to drink a glass of water before your next meal to stay hydrated and manage portions.
+          {t('aiInsightMessage') || "You're doing great! Remember to drink a glass of water before your next meal to stay hydrated and manage portions."}
         </p>
       </motion.div>
     </div>

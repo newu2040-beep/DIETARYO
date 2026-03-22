@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { Home, Utensils, Activity, Settings, Sparkles, Moon, Sun } from 'lucide-react';
+import { Home, Utensils, Activity, Settings, Sparkles, Moon, Sun, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { useTranslation } from '../utils/translations';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const { profile, updateProfile } = useAppContext();
+  const t = useTranslation(profile?.language);
 
   useEffect(() => {
     if (profile?.theme) {
@@ -19,11 +21,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   }, [profile?.theme]);
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'diet', label: 'Diet', icon: Utensils },
-    { id: 'ai', label: 'AI', icon: Sparkles },
-    { id: 'history', label: 'Stats', icon: Activity },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'home', label: t('home'), icon: Home },
+    { id: 'diet', label: t('diet'), icon: Utensils },
+    { id: 'ai', label: t('ai'), icon: Sparkles },
+    { id: 'tools', label: t('tools'), icon: Wrench },
+    { id: 'history', label: t('stats'), icon: Activity },
+    { id: 'settings', label: t('settings'), icon: Settings },
   ];
 
   const toggleTheme = () => {
@@ -40,7 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         </h1>
         <button 
           onClick={toggleTheme}
-          className="p-3 rounded-full bg-black/5 hover:bg-black/10 transition-colors relative overflow-hidden"
+          className="p-3 rounded-full bg-black/5 hover:bg-black/10 transition-colors relative overflow-hidden w-11 h-11 flex items-center justify-center"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -49,6 +52,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               animate={{ y: 0, opacity: 1, rotate: 0 }}
               exit={{ y: 20, opacity: 0, rotate: 90 }}
               transition={{ duration: 0.2 }}
+              className="absolute"
             >
               {profile?.theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </motion.div>
@@ -74,7 +78,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 px-4 pointer-events-none">
-        <nav className="bg-[var(--bg-gradient-from)]/90 backdrop-blur-xl border border-black/5 shadow-2xl rounded-3xl p-2 flex items-center justify-between w-full max-w-md pointer-events-auto">
+        <nav className="bg-[var(--bg-gradient-from)]/90 backdrop-blur-xl border border-black/5 shadow-2xl rounded-3xl p-2 flex items-center justify-between w-full max-w-md pointer-events-auto overflow-x-auto scrollbar-hide">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -82,7 +86,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className="relative p-3 rounded-2xl flex flex-col items-center justify-center gap-1 min-w-[64px] transition-colors"
+                className="relative p-3 rounded-2xl flex flex-col items-center justify-center gap-1 min-w-[60px] transition-colors"
               >
                 {isActive && (
                   <motion.div
@@ -91,8 +95,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                <Icon className={`w-6 h-6 transition-colors ${isActive ? 'text-[var(--primary-btn-text)]' : 'opacity-50'}`} />
-                <span className={`text-[10px] font-medium transition-colors ${isActive ? 'text-[var(--primary-btn-text)]' : 'opacity-50'}`}>
+                <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-[var(--primary-btn-text)]' : 'opacity-50'}`} />
+                <span className={`text-[10px] font-medium transition-colors whitespace-nowrap ${isActive ? 'text-[var(--primary-btn-text)]' : 'opacity-50'}`}>
                   {item.label}
                 </span>
               </button>

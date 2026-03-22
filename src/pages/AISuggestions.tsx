@@ -3,13 +3,28 @@ import { motion } from 'motion/react';
 import { Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useAppContext } from '../context/AppContext';
+import { useTranslation } from '../utils/translations';
 
 let aiClient: GoogleGenAI | null = null;
 
 const getAI = () => {
   if (!aiClient) {
-    // @ts-ignore
-    const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+    let key = '';
+    try {
+      // @ts-ignore
+      key = process.env.GEMINI_API_KEY;
+    } catch (e) {
+      // ignore
+    }
+    if (!key) {
+      try {
+        // @ts-ignore
+        key = import.meta.env.VITE_GEMINI_API_KEY;
+      } catch (e) {
+        // ignore
+      }
+    }
+    
     if (!key) {
       throw new Error('GEMINI_API_KEY environment variable is missing. Please add it to your environment variables.');
     }
@@ -20,6 +35,7 @@ const getAI = () => {
 
 export const AISuggestions: React.FC = () => {
   const { profile } = useAppContext();
+  const t = useTranslation(profile?.language);
   const [suggestion, setSuggestion] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -75,7 +91,7 @@ export const AISuggestions: React.FC = () => {
           <Sparkles className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">AI Insights</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{t('aiInsight')}</h2>
           <p className="text-sm opacity-60">Your personal diet assistant</p>
         </div>
       </div>
@@ -149,14 +165,14 @@ export const AISuggestions: React.FC = () => {
             disabled={isLoading}
             className="flex-1 py-4 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-2xl font-semibold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isLoading ? 'Thinking...' : 'Generate Tip'}
+            {isLoading ? t('thinking') : t('generateTip')}
           </button>
           
           {suggestion && (
             <button
               onClick={handleCopy}
               className="p-4 bg-black/5 rounded-2xl hover:bg-black/10 transition-colors flex items-center justify-center"
-              title="Copy to clipboard"
+              title={t('copyToClipboard')}
             >
               {copied ? <Check className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6" />}
             </button>

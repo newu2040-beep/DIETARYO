@@ -70,6 +70,17 @@ service cloud.firestore {
              (!( 'isJunk' in request.resource.data ) || request.resource.data.isJunk is bool);
     }
 
+    function isValidWorkout() {
+      return hasOnlyAllowedFields(['uid', 'date', 'timestamp', 'type', 'duration', 'intensity', 'notes']) &&
+             request.resource.data.uid == request.auth.uid &&
+             isValidStringLength('date', 10, 10) &&
+             request.resource.data.timestamp is timestamp &&
+             request.resource.data.type in ['Cardio', 'Strength', 'Yoga', 'Sports'] &&
+             request.resource.data.duration is number &&
+             request.resource.data.intensity in ['Low', 'Medium', 'High'] &&
+             isValidOptionalString('notes', 0, 1000);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -90,6 +101,13 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && isValidMeal() && uidUnchanged();
         allow update: if isOwner(userId) && isValidMeal() && uidNotModified() && request.resource.data.timestamp == resource.data.timestamp;
+        allow delete: if isOwner(userId);
+      }
+
+      match /workouts/{workoutId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidWorkout() && uidUnchanged();
+        allow update: if isOwner(userId) && isValidWorkout() && uidNotModified() && request.resource.data.timestamp == resource.data.timestamp;
         allow delete: if isOwner(userId);
       }
     }

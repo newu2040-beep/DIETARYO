@@ -5,9 +5,11 @@ import { useAppContext } from '../context/AppContext';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from '../utils/translations';
 
 export const HistoryStats: React.FC = () => {
-  const { user } = useAppContext();
+  const { user, profile } = useAppContext();
+  const t = useTranslation(profile?.language);
   const [records, setRecords] = useState<any[]>([]);
 
   useEffect(() => {
@@ -31,8 +33,8 @@ export const HistoryStats: React.FC = () => {
           <Activity className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">History</h2>
-          <p className="text-sm opacity-60">Your last 7 days</p>
+          <h2 className="text-2xl font-semibold tracking-tight">{t('historyStats')}</h2>
+          <p className="text-sm opacity-60">{t('last7Days')}</p>
         </div>
       </div>
 
@@ -61,16 +63,16 @@ export const HistoryStats: React.FC = () => {
               
               <div className="flex justify-between items-center">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs opacity-60 uppercase tracking-wider font-semibold">Fasting</span>
+                  <span className="text-xs opacity-60 uppercase tracking-wider font-semibold">{t('fasting')}</span>
                   <span className="font-medium">
                     {record.fastingStart && record.fastingEnd 
                       ? 'Completed' 
-                      : record.fastingStart ? 'Active' : 'Skipped'}
+                      : record.fastingStart ? t('active') : 'Skipped'}
                   </span>
                 </div>
                 
                 <div className="flex flex-col gap-1 text-right">
-                  <span className="text-xs opacity-60 uppercase tracking-wider font-semibold">Weight</span>
+                  <span className="text-xs opacity-60 uppercase tracking-wider font-semibold">{t('weight')}</span>
                   <span className="font-medium">
                     {record.weight ? `${record.weight} kg` : '--'}
                   </span>

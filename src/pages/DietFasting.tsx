@@ -1,26 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Droplets, Flame, Utensils, X, Check } from 'lucide-react';
+import { Plus, Droplets, Flame, Utensils, X, Check, Dumbbell } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { collection, doc, setDoc, getDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { format } from 'date-fns';
+import { useTranslation } from '../utils/translations';
 
 export const DietFasting: React.FC = () => {
   const { user, profile } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'diet' | 'fasting' | 'water'>('diet');
-  const [isAdding, setIsAdding] = useState(false);
+  const t = useTranslation(profile?.language);
+  const [activeTab, setActiveTab] = useState<'diet' | 'fasting' | 'water' | 'workout'>('diet');
+  const [isAddingMeal, setIsAddingMeal] = useState(false);
+  const [isAddingWorkout, setIsAddingWorkout] = useState(false);
   
-  // Form State
+  // Meal Form State
   const [mealType, setMealType] = useState('Breakfast');
   const [description, setDescription] = useState('');
   const [calories, setCalories] = useState('');
   const [notes, setNotes] = useState('');
   const [isJunk, setIsJunk] = useState(false);
 
+  // Workout Form State
+  const [workoutType, setWorkoutType] = useState('Cardio');
+  const [duration, setDuration] = useState('');
+  const [intensity, setIntensity] = useState('Medium');
+  const [workoutNotes, setWorkoutNotes] = useState('');
+
   // Data State
   const [todayRecord, setTodayRecord] = useState<any>(null);
   const [meals, setMeals] = useState<any[]>([]);
+  const [workouts, setWorkouts] = useState<any[]>([]);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -46,9 +56,18 @@ export const DietFasting: React.FC = () => {
       console.error("Error fetching meals:", error);
     });
 
+    const workoutRef = collection(db, `users/${user.uid}/workouts`);
+    const qWorkout = query(workoutRef, where('date', '==', today));
+    const unsubWorkout = onSnapshot(qWorkout, (snapshot) => {
+      setWorkouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Error fetching workouts:", error);
+    });
+
     return () => {
       unsubRecord();
       unsubMeal();
+      unsubWorkout();
     };
   }, [user, today]);
 
@@ -125,26 +144,48 @@ export const DietFasting: React.FC = () => {
       isJunk
     });
 
-    setIsAdding(false);
+    setIsAddingMeal(false);
     setDescription('');
     setCalories('');
     setNotes('');
     setIsJunk(false);
   };
 
+  const handleAddWorkout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !duration) return;
+
+    const workoutId = Date.now().toString();
+    const workoutRef = doc(db, `users/${user.uid}/workouts`, workoutId);
+    
+    await setDoc(workoutRef, {
+      uid: user.uid,
+      date: today,
+      timestamp: serverTimestamp(),
+      type: workoutType,
+      duration: parseInt(duration),
+      intensity,
+      notes: workoutNotes
+    });
+
+    setIsAddingWorkout(false);
+    setDuration('');
+    setWorkoutNotes('');
+  };
+
   return (
     <div className="flex flex-col gap-6 pt-4">
       {/* Tabs */}
-      <div className="flex p-1 bg-black/5 rounded-full">
-        {['diet', 'fasting', 'water'].map((tab) => (
+      <div className="flex p-1 bg-black/5 rounded-full overflow-x-auto scrollbar-hide">
+        {['diet', 'fasting', 'water', 'workout'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
-            className={`flex-1 py-2 text-sm font-medium rounded-full transition-all capitalize ${
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-full transition-all capitalize whitespace-nowrap ${
               activeTab === tab ? 'bg-white shadow-sm text-black' : 'text-black/50 hover:text-black/80'
             }`}
           >
-            {tab}
+            {t(tab as keyof typeof t)}
           </button>
         ))}
       </div>
@@ -160,9 +201,9 @@ export const DietFasting: React.FC = () => {
             className="flex flex-col gap-4"
           >
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-lg">Today's Meals</h3>
+              <h3 className="font-semibold text-lg">{t('todaysDiet')}</h3>
               <button 
-                onClick={() => setIsAdding(true)}
+                onClick={() => setIsAddingMeal(true)}
                 className="p-2 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-full shadow-lg"
               >
                 <Plus className="w-5 h-5" />
@@ -172,7 +213,7 @@ export const DietFasting: React.FC = () => {
             {meals.length === 0 ? (
               <div className="text-center py-10 opacity-50">
                 <Utensils className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p>No meals logged today.</p>
+                <p>{t('noMealsLogged')}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -221,7 +262,7 @@ export const DietFasting: React.FC = () => {
               <div className="text-center flex flex-col items-center">
                 <Flame className={`w-10 h-10 mb-2 ${todayRecord?.fastingStart && !todayRecord?.fastingEnd ? 'text-orange-500' : 'opacity-20'}`} />
                 <span className="text-3xl font-light">
-                  {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? 'Fasting' : '00:00'}
+                  {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? t('fasting') : '00:00'}
                 </span>
                 <span className="text-sm opacity-50 mt-1">
                   {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? 'Keep going!' : 'Ready to start?'}
@@ -237,7 +278,7 @@ export const DietFasting: React.FC = () => {
                   : 'bg-[var(--primary-btn)] text-[var(--primary-btn-text)]'
               }`}
             >
-              {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? 'End Fast' : 'Start Fast'}
+              {todayRecord?.fastingStart && !todayRecord?.fastingEnd ? t('endFast') : t('startFast')}
             </button>
           </motion.div>
         )}
@@ -254,7 +295,7 @@ export const DietFasting: React.FC = () => {
             <div className="text-center">
               <Droplets className="w-16 h-16 text-blue-500 mx-auto mb-4" />
               <h3 className="text-4xl font-light">{todayRecord?.waterIntake || 0} <span className="text-xl opacity-50">ml</span></h3>
-              <p className="opacity-50 mt-2">Daily Goal: {profile?.waterGoal || 2000} ml</p>
+              <p className="opacity-50 mt-2">{t('dailyGoal')}: {profile?.waterGoal || 2000} ml</p>
             </div>
 
             <div className="flex gap-4">
@@ -271,11 +312,55 @@ export const DietFasting: React.FC = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Workout Tab */}
+        {activeTab === 'workout' && (
+          <motion.div
+            key="workout"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="flex flex-col gap-4"
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-lg">{t('todaysWorkout')}</h3>
+              <button 
+                onClick={() => setIsAddingWorkout(true)}
+                className="p-2 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-full shadow-lg"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+
+            {workouts.length === 0 ? (
+              <div className="text-center py-10 opacity-50">
+                <Dumbbell className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p>{t('noWorkoutsLogged')}</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {workouts.map((workout) => (
+                  <div key={workout.id} className="glass-card p-4 rounded-2xl flex flex-col gap-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-xs font-semibold px-2 py-1 bg-black/5 rounded-md uppercase tracking-wider">
+                          {workout.type}
+                        </span>
+                        <h4 className="font-medium mt-2">{workout.duration} mins - {workout.intensity}</h4>
+                      </div>
+                    </div>
+                    {workout.notes && <p className="text-xs opacity-60 mt-1">{workout.notes}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Add Meal Modal */}
       <AnimatePresence>
-        {isAdding && (
+        {isAddingMeal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -290,14 +375,14 @@ export const DietFasting: React.FC = () => {
               className="bg-[var(--bg-gradient-from)] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold">Log Meal</h3>
-                <button onClick={() => setIsAdding(false)} className="p-2 bg-black/5 rounded-full">
+                <h3 className="text-xl font-semibold">{t('logMeal')}</h3>
+                <button onClick={() => setIsAddingMeal(false)} className="p-2 bg-black/5 rounded-full">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleAddMeal} className="flex flex-col gap-4">
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                   {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(type => (
                     <button
                       key={type}
@@ -343,7 +428,7 @@ export const DietFasting: React.FC = () => {
                     onChange={e => setIsJunk(e.target.checked)}
                     className="w-5 h-5 rounded border-black/20 text-[var(--primary-btn)] focus:ring-[var(--primary-btn)]"
                   />
-                  <span className="font-medium">Mark as Junk Food</span>
+                  <span className="font-medium">{t('markAsJunk')}</span>
                 </label>
 
                 <button
@@ -351,7 +436,90 @@ export const DietFasting: React.FC = () => {
                   className="w-full py-4 mt-2 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-2xl font-semibold shadow-lg flex items-center justify-center gap-2"
                 >
                   <Check className="w-5 h-5" />
-                  Save Entry
+                  {t('saveEntry')}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Workout Modal */}
+      <AnimatePresence>
+        {isAddingWorkout && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-[var(--bg-gradient-from)] w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">{t('logWorkout')}</h3>
+                <button onClick={() => setIsAddingWorkout(false)} className="p-2 bg-black/5 rounded-full">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddWorkout} className="flex flex-col gap-4">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {['Cardio', 'Strength', 'Yoga', 'Sports'].map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setWorkoutType(type)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                        workoutType === type ? 'bg-[var(--primary-btn)] text-[var(--primary-btn-text)]' : 'bg-black/5'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+
+                <input
+                  type="number"
+                  placeholder={t('duration')}
+                  value={duration}
+                  onChange={e => setDuration(e.target.value)}
+                  className="w-full p-4 rounded-2xl bg-black/5 border-none focus:ring-2 focus:ring-black/20 outline-none"
+                  required
+                />
+
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {['Low', 'Medium', 'High'].map(level => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setIntensity(level)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                        intensity === level ? 'bg-[var(--primary-btn)] text-[var(--primary-btn-text)]' : 'bg-black/5'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  placeholder="Notes (optional)"
+                  value={workoutNotes}
+                  onChange={e => setWorkoutNotes(e.target.value)}
+                  className="w-full p-4 rounded-2xl bg-black/5 border-none focus:ring-2 focus:ring-black/20 outline-none resize-none h-24"
+                />
+
+                <button
+                  type="submit"
+                  className="w-full py-4 mt-2 bg-[var(--primary-btn)] text-[var(--primary-btn-text)] rounded-2xl font-semibold shadow-lg flex items-center justify-center gap-2"
+                >
+                  <Check className="w-5 h-5" />
+                  {t('saveEntry')}
                 </button>
               </form>
             </motion.div>

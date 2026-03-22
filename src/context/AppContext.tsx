@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestoreErrorHandler';
@@ -23,6 +23,7 @@ interface AppContextType {
   isAuthReady: boolean;
   loginError: string | null;
   login: () => Promise<void>;
+  loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
 }
@@ -42,11 +43,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (currentUser) {
           // Check if profile exists, if not create one
           const userRef = doc(db, 'users', currentUser.uid);
-          const docSnap = await getDoc(userRef).catch(e => handleFirestoreError(e, OperationType.GET, `users/${currentUser.uid}`, auth));
+          let docSnap;
+          try {
+            docSnap = await getDoc(userRef);
+          } catch (e) {
+            handleFirestoreError(e, OperationType.GET, `users/${currentUser.uid}`, auth);
+            return;
+          }
           if (!docSnap.exists()) {
             const newProfile = {
               uid: currentUser.uid,
-              email: currentUser.email || '',
+              email: currentUser.email || 'guest@dietaryo.app',
               theme: 'peach' as Theme,
               language: 'en' as Language,
               waterGoal: 2000,
@@ -95,17 +102,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const loginAsGuest = async () => {
+    setLoginError(null);
+    try {
+      await signInAnonymously(auth);
+    } catch (error: any) {
+      console.error("Guest login error:", error);
+      setLoginError(error.message || 'Failed to log in as guest. Please try again.');
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
+    // Optimistically update local state
+    setProfile(prev => prev ? { ...prev, ...data } : null);
     await setDoc(doc(db, 'users', user.uid), data, { merge: true }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `users/${user.uid}`, auth));
   };
 
   return (
-    <AppContext.Provider value={{ user, profile, isAuthReady, loginError, login, logout, updateProfile }}>
+    <AppContext.Provider value={{ user, profile, isAuthReady, loginError, login, loginAsGuest, logout, updateProfile }}>
       {children}
     </AppContext.Provider>
   );
